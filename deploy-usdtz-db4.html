@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Deploy USDT.z ...db4</title>
+<style>
+body { font-family: Arial, sans-serif; background: #1a1a2e; color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+.box { background: #16213e; padding: 40px; border-radius: 12px; max-width: 520px; width: 100%; box-shadow: 0 0 30px rgba(0,200,255,0.2); }
+h1 { color: #00d4ff; text-align: center; margin-bottom: 10px; }
+.badge { background: #0f3460; border: 1px solid #00d4ff33; border-radius: 6px; padding: 4px 10px; font-size: 12px; color: #00d4ff; display: inline-block; margin-bottom: 20px; }
+button { width: 100%; padding: 15px; background: #00d4ff; color: #000; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 12px; }
+button:hover { background: #00b8d9; }
+button:disabled { background: #444; color: #888; cursor: not-allowed; }
+#status { margin-top: 20px; padding: 15px; background: #0f3460; border-radius: 8px; word-break: break-all; font-size: 13px; display: none; }
+.success { border-left: 4px solid #00ff88; }
+.error { border-left: 4px solid #ff4444; }
+.info { border-left: 4px solid #00d4ff; }
+.detail { margin: 6px 0; font-size: 14px; }
+label { color: #aaa; font-size: 12px; }
+.detail span { color: #fff; font-weight: bold; }
+</style>
+</head>
+<body>
+<div class="box">
+  <div style="text-align:center; margin-bottom: 20px;">
+    <div style="font-size:48px;">💵</div>
+    <h1>Deploy USDT.z</h1>
+    <div class="badge">Endereço terminando em ...db4</div>
+  </div>
+  <div class="detail"><label>Nome:</label> <span>USDT.z</span></div>
+  <div class="detail"><label>Símbolo:</label> <span>USDT.z</span></div>
+  <div class="detail"><label>Supply:</label> <span>3.000.000.000</span></div>
+  <div class="detail"><label>Decimais:</label> <span>18</span></div>
+  <div class="detail"><label>Contrato previsto:</label> <span style="color:#00ff88;">0x58bdfe...e6db4</span></div>
+  <div class="detail"><label>Factory:</label> <span style="font-size:11px;">0x67dfee16f49b29074b5afe09c03484cb870c770a</span></div>
+  <div class="detail"><label>Rede:</label> <span>BNB Smart Chain</span></div>
+
+  <button id="btn" onclick="deploy()">🚀 Deploy USDT.z (1 transação)</button>
+  <div id="status"></div>
+</div>
+
+<script>
+// Factory já deployada
+const FACTORY_ADDRESS = '0x67dfee16f49b29074b5afe09c03484cb870c770a';
+const SALT = 282;
+
+function showStatus(msg, type) {
+  const el = document.getElementById('status');
+  el.style.display = 'block';
+  el.className = type;
+  el.innerHTML = msg;
+}
+
+async function estimateGas(from, data, to) {
+  try {
+    const params = to ? { from, to, data } : { from, data };
+    const est = await window.ethereum.request({ method: 'eth_estimateGas', params: [params] });
+    return '0x' + Math.ceil(parseInt(est, 16) * 1.3).toString(16);
+  } catch(e) { return '0x300000'; }
+}
+
+async function waitReceipt(txHash) {
+  for (let i = 0; i < 40; i++) {
+    await new Promise(r => setTimeout(r, 3000));
+    const receipt = await window.ethereum.request({
+      method: 'eth_getTransactionReceipt',
+      params: [txHash]
+    });
+    if (receipt) return receipt;
+  }
+  return null;
+}
+
+async function deploy() {
+  const btn = document.getElementById('btn');
+  if (!window.ethereum) { showStatus('❌ MetaMask não encontrada.', 'error'); return; }
+  try {
+    btn.disabled = true;
+    btn.textContent = 'Conectando...';
+
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
+
+    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+    if (chainId !== '0x38') {
+      showStatus('⚠️ Troque para a <b>BNB Smart Chain</b>.', 'error');
+      btn.disabled = false; btn.textContent = '🚀 Deploy USDT.z (1 transação)';
+      return;
+    }
+
+    const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+    const from = accounts[0];
+
+    // Chamar deploy(282) na Factory existente
+    // seletor de deploy(uint256) = a5e38751
+    const saltEncoded = SALT.toString(16).padStart(64, '0');
+    const callData = '0xa5e38751' + saltEncoded;
+
+    btn.textContent = 'Estimando gas...';
+    showStatus('⏳ Estimando gas...', 'info');
+    const gas = await estimateGas(from, callData, FACTORY_ADDRESS);
+
+    btn.textContent = 'Aguarde MetaMask...';
+    showStatus('⏳ Confirme a transação no MetaMask...', 'info');
+
+    const tx = await window.ethereum.request({
+      method: 'eth_sendTransaction',
+      params: [{ from, to: FACTORY_ADDRESS, data: callData, gas }]
+    });
+
+    showStatus('⏳ Aguardando confirmação...<br>TX: ' + tx, 'info');
+    const receipt = await waitReceipt(tx);
+
+    let contractAddr = '0x58bdfe42f94998fae11a2609df6226cdb1fe6db4';
+    if (receipt && receipt.logs) {
+      for (const log of receipt.logs) {
+        if (log.topics && log.topics[0] && log.data && log.data.length > 66) {
+          const possible = '0x' + log.data.slice(26, 66);
+          if (possible.toLowerCase().endsWith('db4')) {
+            contractAddr = possible;
+            break;
+          }
+        }
+      }
+    }
+
+    showStatus(
+      '🎉 <b>USDT.z deployado com sucesso!</b><br><br>' +
+      '<b>Endereço do contrato:</b><br>' +
+      '<span style="color:#00ff88;font-size:14px;">' + contractAddr + '</span><br><br>' +
+      '🔍 <a href="https://bscscan.com/address/' + contractAddr + '" target="_blank" style="color:#00d4ff;">Ver no BscScan ↗</a><br><br>' +
+      '🔍 <a href="https://bscscan.com/tx/' + tx + '" target="_blank" style="color:#00d4ff;">Ver TX no BscScan ↗</a>',
+      'success'
+    );
+    btn.textContent = '✅ Deploy Concluído!';
+
+  } catch (err) {
+    showStatus('❌ Erro: ' + err.message, 'error');
+    btn.disabled = false;
+    btn.textContent = '🚀 Deploy USDT.z (1 transação)';
+  }
+}
+</script>
+</body>
+</html>

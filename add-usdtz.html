@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Adicionar USDT.z à MetaMask</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: Arial, sans-serif;
+  background: #1a1a2e;
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+.box {
+  background: #16213e;
+  padding: 40px;
+  border-radius: 16px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 0 40px rgba(0,200,255,0.15);
+}
+.logo {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+}
+h1 { font-size: 24px; color: #00d4ff; margin-bottom: 8px; }
+.symbol { color: #aaa; font-size: 14px; margin-bottom: 24px; }
+.info { background: #0f3460; border-radius: 8px; padding: 16px; margin-bottom: 24px; text-align: left; }
+.info-row { display: flex; justify-content: space-between; margin: 6px 0; font-size: 13px; }
+.info-row span:first-child { color: #aaa; }
+.info-row span:last-child { color: #fff; font-weight: bold; word-break: break-all; max-width: 200px; text-align: right; }
+button {
+  width: 100%;
+  padding: 16px;
+  background: #26A17B;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 17px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+button:hover { background: #1e8a68; }
+button:disabled { background: #444; cursor: not-allowed; }
+#status {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  display: none;
+}
+.success { background: #0d3d2a; border-left: 4px solid #00ff88; color: #00ff88; }
+.error { background: #3d0d0d; border-left: 4px solid #ff4444; color: #ff4444; }
+.network { font-size: 12px; color: #666; margin-top: 16px; }
+</style>
+</head>
+<body>
+<div class="box">
+  <img class="logo" src="https://claudineiribeiro-br.github.io/deploy-usdtz/logo.svg" alt="USDT.z logo" onerror="this.style.display='none'"/>
+  <h1>USDT.z</h1>
+  <div class="symbol">Tether USD Bridged ZED20</div>
+
+  <div class="info">
+    <div class="info-row"><span>Rede</span><span>BNB Smart Chain</span></div>
+    <div class="info-row"><span>Símbolo</span><span>USDT.z</span></div>
+    <div class="info-row"><span>Decimais</span><span>18</span></div>
+    <div class="info-row"><span>Contrato</span><span>0x58bdfe42...FE6db4</span></div>
+  </div>
+
+  <button id="btn" onclick="addToken()">
+    🦊 Adicionar USDT.z à MetaMask
+  </button>
+
+  <div id="status"></div>
+  <div class="network">Certifique-se de estar na rede BNB Smart Chain</div>
+</div>
+
+<script>
+async function addToken() {
+  const btn = document.getElementById('btn');
+  const status = document.getElementById('status');
+
+  if (!window.ethereum) {
+    status.style.display = 'block';
+    status.className = 'error';
+    status.textContent = '❌ MetaMask não encontrada. Instale a extensão.';
+    return;
+  }
+
+  try {
+    btn.disabled = true;
+    btn.textContent = 'Aguardando MetaMask...';
+
+    const wasAdded = await window.ethereum.request({
+      method: 'wallet_watchAsset',
+      params: {
+        type: 'ERC20',
+        options: {
+          address: '0x58bdfe42F94998Fae11a2609df6226cDB1FE6db4',
+          symbol: 'USDT.z',
+          decimals: 18,
+          image: 'https://claudineiribeiro-br.github.io/deploy-usdtz/logo.svg'
+        }
+      }
+    });
+
+    status.style.display = 'block';
+    if (wasAdded) {
+      status.className = 'success';
+      status.textContent = '✅ USDT.z adicionado com sucesso à MetaMask!';
+      btn.textContent = '✅ Token Adicionado!';
+    } else {
+      status.className = 'error';
+      status.textContent = '⚠️ Operação cancelada pelo usuário.';
+      btn.disabled = false;
+      btn.innerHTML = '🦊 Adicionar USDT.z à MetaMask';
+    }
+
+  } catch (err) {
+    status.style.display = 'block';
+    status.className = 'error';
+    status.textContent = '❌ Erro: ' + err.message;
+    btn.disabled = false;
+    btn.innerHTML = '🦊 Adicionar USDT.z à MetaMask';
+  }
+}
+</script>
+</body>
+</html>
